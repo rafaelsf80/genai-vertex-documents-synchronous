@@ -1,8 +1,7 @@
-# python3.8 breaks with gradio
-FROM python:3.7
+FROM python:3.10-slim
 
-RUN pip install gradio 
-RUN pip install google-cloud-aiplatform==1.25.0 google-cloud-logging google-cloud-documentai==2.0.3
+RUN pip install --no-cache-dir gradio
+RUN pip install google-cloud-aiplatform google-genai google-cloud-logging google-cloud-documentai
 
 COPY ./gradioapp /app
 

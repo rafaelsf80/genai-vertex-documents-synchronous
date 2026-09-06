@@ -1,15 +1,15 @@
 from google.api_core.client_options import ClientOptions
 from google.cloud import documentai_v1 as documentai
 
-import vertexai
-from vertexai.preview.language_models import TextGenerationModel
+from google import genai
+from google.genai import types
 
 import google.cloud.logging
 
 import gradio as gr
 
 PROJECT_ID = "argolis-rafaelsanchez-ml-dev"
-REGION = "us-central1" 
+REGION = "global" 
 
 client = google.cloud.logging.Client(project=PROJECT_ID)
 client.setup_logging()
@@ -22,8 +22,6 @@ def ocr_parser(file):
 
     FILE_PATH = file.name # Getting filename, since file type is tempfile._TemporaryFileWrapper
     MIME_TYPE = "application/pdf"
-
-    PROJECT_ID = "argolis-rafaelsanchez-ml-dev"
     LOCATION = "eu"
     PROCESSOR_ID = "a99d341e2c8c2e1c" # ocr processor
 
@@ -50,13 +48,18 @@ def ocr_parser(file):
     document_object = result.document
     logger.log_text("Document processing complete.")
     logger.log_text(f"Text: {document_object.text}")
+    #print("DocAI result:", document_object.text)
     return document_object.text
 
-def llm_insights(prompt, ocr, include_ocr):
+def llm_insights(prompt, include_ocr, file):
     
-    vertexai.init(project=PROJECT_ID, location=REGION)
+    client = genai.Client(
+        vertexai=True,
+        project=PROJECT_ID,
+        location=REGION
+    )
 
-    model = TextGenerationModel.from_pretrained("text-bison@001") 
+    ocr = ocr_parser(file)
 
     if ocr == "" or prompt == "":
         return "ERROR: No files selected or prompt empty. Upload a file first"
@@ -75,33 +78,25 @@ def llm_insights(prompt, ocr, include_ocr):
 
     logger.log_text(total_prompt)
 
-    answer = model.predict(
-        total_prompt,#prompt+" "+ocr if include_ocr else prompt,
-        max_output_tokens=256,
-        temperature=0.2,
-        top_p=0.8,
-        top_k=40)
+    response = client.models.generate_content(
+        model="gemini-3.8-flash",
+        contents=total_prompt,
+        config=types.GenerateContentConfig(
+            thinking_config=types.ThinkingConfig(thinking_budget=1024)
+        )
+    )
 
-    return answer
+    print(response.text)
 
-demo = gr.Blocks()
+    return response.text, ocr
 
-with demo:
-    gr.Markdown("# DOCUMENT SEMANTIC SEARCH DEMO SEMI-STRUCTURED (MAX_PAGES 15)")
 
-    docai_file = gr.File(label="Upload doc. Max pages: 15", type="file")
-    
-    gr.Markdown("### PROMPT: Ask questions on the doc with the checkbutton enabled. Example: 'How much is the trip cost?', 'What is the name of the traveller'")
-    prompt = gr.Textbox(label="Prompt")
-    include_ocr_prompt = gr.Checkbox(label="Include OCR in prompt", value=True)
-    
-    b = gr.Button("Submit", variant="primary")
-    
-    answer = gr.Textbox(label="Output", variant="secondary")
-    ocr = gr.Textbox(label="Show OCR. Debugging purposes. Read-only field", max_lines=20)
-    docai_file.change(ocr_parser, inputs=docai_file, outputs=ocr)
-
-    b.click(llm_insights, inputs=[prompt,ocr,include_ocr_prompt], outputs=answer)
+demo = gr.Interface(
+    fn=llm_insights,
+    inputs=[gr.Text(label="Enter prompt"), gr.Checkbox(label="Include OCR in prompt", value=True), gr.File(label="Upload doc. Max pages: 15")],
+    outputs=["text", gr.Textbox(label="Show OCR. Debugging purposes. Read-only field", max_lines=20)],
+    title="Basic RAG on unstructured documents",
+    description="Document semantic search unstructured docs (max pages 15). Ask questions on the doc with the checkbutton enabled. Example: 'How much is the trip cost?', 'What is the name of the traveller'"
+    )
 
 demo.launch(server_name="0.0.0.0", server_port=7860)
-

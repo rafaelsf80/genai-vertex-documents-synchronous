@@ -1,6 +1,6 @@
-# Q&A on unstructured documents with Vertex AI LLM and Document AI OCR
+# Q&A on unstructured documents with Gemini LLM and Document AI OCR
 
-The repo includes a [Gradio app](https://gradio.app/) to show the combined capabilities of Vertex LLM models and Google Cloud Document AI OCR to implement a semantic search on unstructured documents.
+The repo includes a [Gradio app](https://gradio.app/) to show the combined capabilities of Gemini LLM models (Gemini Flash) and Google Cloud Document AI OCR to implement a semantic search on unstructured documents.
 
 > NOTE: Uploaded documents should be **less than 15 pages** and **less than 8192 tokens**.
      
@@ -13,7 +13,7 @@ The first step is to load the document. While you can use `PyPDF` to load and sp
 
 So, to extract the text from a photo or a scanned documents, you must use OCR tools like Document AI OCR. [Google Cloud Document AI](https://cloud.google.com/document-ai/docs) is a document understanding solution that takes unstructured data (e.g. documents, emails, invoices, forms, etc) and makes the data easier to understand, analyze, and consume. One of the pre-trained models performs **Optical Character Recognition (OCR)**, which is the one we will use in this post. According to [this paper](http://dx.doi.org/10.1007/s42001-021-00149-1), Document AI OCR from Google outperforms other OCR solutions available either open-source or commercial.
 
-Document AI OCR parser supports online and batch processing. In this sample, we will use online and limit is set by the Document AI OCR online/synchronous processing which is [15 pages](https://cloud.google.com/document-ai/quotas#general_processors). Additionally, there is also the limit of [8192 max input tokens](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models#foundation_models) by the `text-bison@001`model.
+Document AI OCR parser supports online and batch processing. In this sample, we will use online and limit is set by the Document AI OCR online/synchronous processing which is [15 pages](https://cloud.google.com/document-ai/quotas#general_processors). 
 
 ![Document AI](images/docai-animated.gif)
 
@@ -58,9 +58,9 @@ To build and deploy the [Gradio app](https://gradio.app/) in [Cloud Run](https:/
 Note authentication is disabled and the service account in the one configured earlier:
 
 ```sh
-gcloud auth configure-docker europe-west4-docker.pkg.dev
-gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/docai-transformers
-gcloud run deploy docai-transformers --port 7860 --image europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/docai-transformers --service-account=cloud-run-llm@argolis-rafaelsanchez-ml-dev.iam.gserviceaccount.com --allow-unauthenticated --region=europe-west4 --platform=managed  --project=argolis-rafaelsanchez-ml-dev
+gcloud auth configure-docker europe-southwest1-docker.pkg.dev
+gcloud builds submit --tag europe-southwest1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/docai-transformers
+gcloud run deploy docai-transformers --port 7860 --image europe-southwest1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/docai-transformers --service-account=cloud-run-llm@argolis-rafaelsanchez-ml-dev.iam.gserviceaccount.com --allow-unauthenticated --region=europe-southwest1 --platform=managed  --project=argolis-rafaelsanchez-ml-dev
 ```
 
 
